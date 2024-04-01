@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Socket, io } from "socket.io-client";
+import { useEffect } from "react";
 
 type user = {
   name: string;
@@ -7,6 +8,29 @@ type user = {
   id?: string;
   username: string;
   password?: string;
+};
+
+type code = {
+  code?: string;
+  lang?: string;
+  input?: string;
+  output?: string;
+};
+
+type chats = {
+  user?: string;
+  time?: string;
+  chat?: string;
+};
+
+export type room = {
+  roomId?: string;
+  admin?: { socketId: string; user: user };
+  users?: { socketId: string; user: user }[] | [];
+  allowOthers?: boolean;
+  code?: code;
+  chats?: chats[];
+  usersId?: string[];
 };
 
 type store = {
@@ -24,11 +48,25 @@ type store = {
 
   socket: Socket;
 
-  room: string;
-  setRoom: (room: string) => void;
+  room: room | null;
+  setRoom: (room: room | null) => void;
 
   socketId: string;
   setSocketId: (room: string) => void;
+
+  joined: boolean;
+  setJoined: (joined: boolean) => void;
+
+  inviteUser: { name: string; email: string; color: string }[];
+  setInviteUser: (
+    inviteUser: { name: string; email: string; color: string }[]
+  ) => void;
+
+  allow: boolean;
+  setAllow: (allow: boolean) => void;
+
+  userEmail: string;
+  setUserEmail: (userEmail: string) => void;
 };
 
 export const useStore = create<store>((set) => ({
@@ -48,9 +86,21 @@ export const useStore = create<store>((set) => ({
     autoConnect: false,
   }),
 
-  room: "",
+  room: null,
   setRoom: (room) => set((state) => ({ room })),
 
   socketId: "",
   setSocketId: (socketId) => set((state) => ({ socketId })),
+
+  joined: false,
+  setJoined: (joined) => set((state) => ({ joined })),
+
+  inviteUser: [],
+  setInviteUser: (inviteUser) => set((state) => ({ inviteUser })),
+
+  allow: false,
+  setAllow: (allow: boolean) => set((state) => ({ allow })),
+
+  userEmail: "",
+  setUserEmail: (userEmail: string) => set((state) => ({ userEmail })),
 }));
