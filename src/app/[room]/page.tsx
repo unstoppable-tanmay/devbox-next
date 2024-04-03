@@ -155,7 +155,9 @@ const Page = ({ params }: { params: { room: string } }) => {
         return;
       }
       const response = await axios.post(
-        "http://localhost:3002/isUser",
+        process.env.BACKEND_URL
+          ? process.env.BACKEND_URL + "/isUser"
+          : "http://localhost:3002/isUser",
         {
           email: userEmail,
           useremail: user.email,
@@ -222,11 +224,11 @@ const Page = ({ params }: { params: { room: string } }) => {
       setJoined(true);
     });
     socket.on("socketId", (data) => {
-      console.log(data)
+      console.log(data);
       setSocketId(data.id);
     });
     socket.on("removed", (data) => {
-      console.log(socket.id+" ============= "+data)
+      console.log(socket.id + " ============= " + data);
       if (socket.id === data) {
         socket.disconnect();
         setJoined(false);
@@ -263,9 +265,14 @@ const Page = ({ params }: { params: { room: string } }) => {
     const signin = async () => {
       try {
         if (!isUser) {
-          const response = await axios.get("http://localhost:3002/auth", {
-            withCredentials: true,
-          });
+          const response = await axios.get(
+            process.env.BACKEND_URL
+              ? process.env.BACKEND_URL + "/auth"
+              : "http://localhost:3002/auth",
+            {
+              withCredentials: true,
+            }
+          );
 
           if (response.data) {
             setIsUser(true);
@@ -294,7 +301,7 @@ const Page = ({ params }: { params: { room: string } }) => {
               router.replace("/");
               return;
             }
-            console.log(socket.id)
+            console.log(socket.id);
             socket.emit("join_room", {
               roomId: params.room,
               user: { socketId: socket.id, user: response.data.data },
