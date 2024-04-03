@@ -31,6 +31,7 @@ export type room = {
   code?: code;
   chats?: chats[];
   usersId?: string[];
+  allowOutBoundMessages?:boolean
 };
 
 type store = {
@@ -62,8 +63,11 @@ type store = {
     inviteUser: { name: string; email: string; color: string }[]
   ) => void;
 
-  allow: boolean;
-  setAllow: (allow: boolean) => void;
+  // allow: boolean;
+  // setAllow: (allow: boolean) => void;
+
+  // allowOutBoundMessages: boolean;
+  // setAllowOutBoundMessages: (allowOutBoundMessages: boolean) => void;
 
   userEmail: string;
   setUserEmail: (userEmail: string) => void;
@@ -98,8 +102,11 @@ export const useStore = create<store>((set) => ({
   inviteUser: [],
   setInviteUser: (inviteUser) => set((state) => ({ inviteUser })),
 
-  allow: false,
-  setAllow: (allow: boolean) => set((state) => ({ allow })),
+  // allow: false,
+  // setAllow: (allow: boolean) => set((state) => ({ allow })),
+
+  // allowOutBoundMessages: false,
+  // setAllowOutBoundMessages: (allowOutBoundMessages: boolean) =>set((state) => ({ allowOutBoundMessages })),
 
   userEmail: "",
   setUserEmail: (userEmail: string) => set((state) => ({ userEmail })),

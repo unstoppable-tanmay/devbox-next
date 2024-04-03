@@ -115,14 +115,16 @@ const Page = ({ params }: { params: { room: string } }) => {
     socketId,
     joined,
     setJoined,
-    allow,
+    // allow,
     inviteUser,
     invitedUser,
-    setAllow,
+    // setAllow,
     setInviteUser,
     setInvitedUser,
     setUserEmail,
     userEmail,
+    // allowOutBoundMessages,
+    // setAllowOutBoundMessages,
   } = useStore();
   const { innerWidth, innerHeight, outerHeight, outerWidth } = useWindowSize();
   const [isMobile, setIsMobile] = useState(false);
@@ -207,8 +209,9 @@ const Page = ({ params }: { params: { room: string } }) => {
   const updateRoom = async () => {
     socket.emit("update_room", {
       roomId: room?.roomId,
-      allowOthers: allow,
+      allowOthers: room?.allowOthers,
       invitedUsers: inviteUser.map((e) => e.email),
+      allowOutBoundMessages: room?.allowOutBoundMessages,
     });
   };
 
@@ -226,6 +229,13 @@ const Page = ({ params }: { params: { room: string } }) => {
     socket.on("socketId", (data) => {
       console.log(data);
       setSocketId(data.id);
+    });
+    socket.on("outbound", (data: { name: string }) => {
+      toast({
+        variant: "destructive",
+        title: data.name + " Is Going Out Of Bound",
+        description: "code better",
+      });
     });
     socket.on("removed", (data) => {
       console.log(socket.id + " ============= " + data);
@@ -325,14 +335,25 @@ const Page = ({ params }: { params: { room: string } }) => {
     if (joined) socket.emit("update", room);
   }, [room]);
 
+  useEffect(() => {
+    document.addEventListener("mouseleave", () => {
+      if (
+        room?.allowOutBoundMessages &&
+        room?.roomId &&
+        room.admin?.socketId != socket.id
+      )
+        socket.emit("outbound", { roomId: room?.roomId, name: user.name });
+    });
+  });
+
   return (
     <SafeHydrate>
+      {loading && (
+        <div className="loader bg-black/70 backdrop-blur-md w-screen h-screen top-0 left-0 flex items-center justify-center fixed">
+          Loading...
+        </div>
+      )}
       <main className="flex min-h-screen items-center flex-col overflow-x-hidden relative">
-        {loading && (
-          <div className="loader bg-black/70 backdrop-blur-md w-screen h-screen top-0 left-0 flex items-center justify-center fixed">
-            Loading...
-          </div>
-        )}
         <div className="w-screen flex items-center justify-between px-4 font-bold text-lg py-4">
           <span className="hidden md:flex">Dev-Box</span>
           <div className="room font-normal text-base flex gap-2 items-center">
@@ -344,7 +365,8 @@ const Page = ({ params }: { params: { room: string } }) => {
                 socket.disconnect();
                 setJoined(false);
                 setRoom(null);
-                router.replace("/");
+                setLoading(false);
+                router.back();
               }}
               className="bg-red-400/20 hover:bg-red-400/30"
             >
@@ -415,102 +437,126 @@ const Page = ({ params }: { params: { room: string } }) => {
             </Dialog>
 
             {/* Settings */}
-            <Dialog
-              open={settingsOpen}
-              onOpenChange={(e) => setSettingsOpen(e)}
-            >
-              <Tooltip>
-                <TooltipTrigger>
-                  <DialogTrigger asChild>
-                    <Button onClick={() => setSettingsOpen(true)}>
-                      <HiCog6Tooth />
-                    </Button>
-                  </DialogTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Settings</p>
-                </TooltipContent>
-              </Tooltip>
-              <DialogContent className="bg-black border-white/40 max-w-[clamp(200px,400px,90vw)] p-4 rounded-lg">
-                <DialogHeader>
-                  <DialogTitle>Update Room</DialogTitle>
-                  <DialogClose className="border-none" />
-                </DialogHeader>
-                <div className="createRoom flex flex-col gap-4 items-center justify-center">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={allow}
-                      onCheckedChange={(e) => setAllow(e as boolean)}
-                      id="terms"
-                      className="border-[1px] border-white rounded-sm"
-                    />
-                    <label
-                      htmlFor="terms"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none"
-                    >
-                      Allow Others to Join Your Room
-                    </label>
-                  </div>
-
-                  {inviteUser.length ? (
-                    <div className="flex w-full flex-wrap items-center justify-center gap-3">
-                      {inviteUser.map((e, i) => {
-                        return (
-                          <span
-                            key={i}
-                            style={{
-                              background: e.color,
-                            }}
-                            className={`pl-1 pr-2 py-1 text-xs bg-opacity-20 rounded-full flex items-center justify-center font-bold`}
-                          >
-                            <span className="badge bg-white/60 rounded-full text-[10px] h-full aspect-square mr-1 flex items-center justify-center px-2">
-                              {e.name[0].toUpperCase()}
-                            </span>
-                            {e.name}
-                            <IoClose
-                              className="text-lg ml-2 cursor-pointer text-orange-500"
-                              onClick={(a) => {
-                                setInviteUser(
-                                  inviteUser.filter((c) => c.email != e.email)
-                                );
-                              }}
-                            />
-                          </span>
-                        );
-                      })}
+            {room?.admin?.socketId === socket.id && (
+              <Dialog
+                open={settingsOpen}
+                onOpenChange={(e) => setSettingsOpen(e)}
+              >
+                <Tooltip>
+                  <TooltipTrigger>
+                    <DialogTrigger asChild>
+                      <Button onClick={() => setSettingsOpen(true)}>
+                        <HiCog6Tooth />
+                      </Button>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Settings</p>
+                  </TooltipContent>
+                </Tooltip>
+                <DialogContent className="bg-black border-white/40 max-w-[clamp(200px,400px,90vw)] p-4 rounded-lg">
+                  <DialogHeader>
+                    <DialogTitle>Update Room</DialogTitle>
+                    <DialogClose className="border-none" />
+                  </DialogHeader>
+                  <div className="createRoom flex flex-col gap-4 items-center justify-center">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={room?.allowOthers}
+                        onCheckedChange={(e: boolean) =>
+                          setRoom({ ...room, allowOthers: e })
+                        }
+                        id="terms"
+                        className="border-[1px] border-white rounded-sm"
+                      />
+                      <label
+                        htmlFor="terms"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none"
+                      >
+                        Allow Others to Join Your Room
+                      </label>
                     </div>
-                  ) : (
-                    <></>
-                  )}
-                  <label
-                    htmlFor="invite"
-                    className="room-id-input rounded-md text-white bg-white/20 w-full flex overflow-hidden"
-                  >
-                    <input
-                      id="invite"
-                      placeholder="Enter email of peoples to invite."
-                      className="pl-3 outline-none border-none bg-transparent flex-1 text-sm py-2 leading-none"
-                      type="text"
-                      value={userEmail}
-                      onChange={(e) => setUserEmail(e.target.value)}
-                    />
-                    <button
-                      onClick={(e) => addEmail()}
-                      className="add h-full px-2 py-2 flex items-center justify-center bg-white/30"
-                    >
-                      add
-                    </button>
-                  </label>
 
-                  <button
-                    className="room-id-input px-4 py-2 rounded-md text-white bg-green-500/40 w-full active:scale-[0.975]  duration-100 transition-all"
-                    onClick={updateRoom}
-                  >
-                    Update
-                  </button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={room?.allowOutBoundMessages}
+                        onCheckedChange={(e) =>
+                          setRoom({
+                            ...room,
+                            allowOutBoundMessages: e as boolean,
+                          })
+                        }
+                        id="allowOutBoundMessages"
+                        className="border-[1px] border-white rounded-sm"
+                      />
+                      <label
+                        htmlFor="allowOutBoundMessages"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none"
+                      >
+                        Allow Out Bound Messages
+                      </label>
+                    </div>
+
+                    {inviteUser.length ? (
+                      <div className="flex w-full flex-wrap items-center justify-center gap-3">
+                        {inviteUser.map((e, i) => {
+                          return (
+                            <span
+                              key={i}
+                              style={{
+                                background: e.color,
+                              }}
+                              className={`pl-1 pr-2 py-1 text-xs bg-opacity-20 rounded-full flex items-center justify-center font-bold`}
+                            >
+                              <span className="badge bg-white/60 rounded-full text-[10px] h-full aspect-square mr-1 flex items-center justify-center px-2">
+                                {e.name[0].toUpperCase()}
+                              </span>
+                              {e.name}
+                              <IoClose
+                                className="text-lg ml-2 cursor-pointer text-orange-500"
+                                onClick={(a) => {
+                                  setInviteUser(
+                                    inviteUser.filter((c) => c.email != e.email)
+                                  );
+                                }}
+                              />
+                            </span>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <></>
+                    )}
+                    <label
+                      htmlFor="invite"
+                      className="room-id-input rounded-md text-white bg-white/20 w-full flex overflow-hidden"
+                    >
+                      <input
+                        id="invite"
+                        placeholder="Enter email of peoples to invite."
+                        className="pl-3 outline-none border-none bg-transparent flex-1 text-sm py-2 leading-none"
+                        type="text"
+                        value={userEmail}
+                        onChange={(e) => setUserEmail(e.target.value)}
+                      />
+                      <button
+                        onClick={(e) => addEmail()}
+                        className="add h-full px-2 py-2 flex items-center justify-center bg-white/30"
+                      >
+                        add
+                      </button>
+                    </label>
+
+                    <button
+                      className="room-id-input px-4 py-2 rounded-md text-white bg-green-500/40 w-full active:scale-[0.975]  duration-100 transition-all"
+                      onClick={updateRoom}
+                    >
+                      Update
+                    </button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
 
             {/* Users */}
             <Dialog>
@@ -535,7 +581,7 @@ const Page = ({ params }: { params: { room: string } }) => {
                   {room?.users?.map((e) => {
                     return (
                       <div
-                        className="user p-2 px-4 rounded-md bg-white/20 flex justify-between items-center"
+                        className="user p-2 px-4 rounded-md bg-white/20 flex justify-between items-center mb-3"
                         key={e.socketId}
                       >
                         <h3 className="text-sm">{e.user.name}</h3>

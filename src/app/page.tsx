@@ -26,14 +26,16 @@ export default function Home() {
     socketId,
     joined,
     setJoined,
-    allow,
+    // allow,
     inviteUser,
     invitedUser,
-    setAllow,
+    // setAllow,
     setInviteUser,
     setInvitedUser,
     setUserEmail,
     userEmail,
+    // allowOutBoundMessages,
+    // setAllowOutBoundMessages
   } = useStore();
   const [cookies, setCookie, removeCookie] = useCookies(["token"]);
 
@@ -73,6 +75,7 @@ export default function Home() {
       signin().finally(() => {
         setLoading(false);
       });
+    setLoading(false);
   }, [setLoading, setIsUser, setUser, toast, isUser]);
 
   // Register
@@ -279,8 +282,9 @@ export default function Home() {
     setLoading(true);
     socket.emit("create_room", {
       admin: { socketId: socket.id, user },
-      allowOthers: allow,
+      allowOthers: room?.allowOthers ?? false,
       invitedUsers: inviteUser.map((e) => e.email),
+      allowOutBoundMessages: room?.allowOutBoundMessages ?? false,
     });
   };
 
@@ -307,7 +311,9 @@ export default function Home() {
         <div className="loader bg-black/70 backdrop-blur-md w-screen h-screen top-0 left-0 flex items-center justify-center">
           Loading...
         </div>
-      ):<></>}
+      ) : (
+        <></>
+      )}
       <main className="w-screen min-h-screen flex items-center flex-col relative">
         <div className="w-screen flex items-center justify-between px-10 font-bold text-lg py-4 flex-wrap">
           Dev-Box
@@ -330,16 +336,31 @@ export default function Home() {
 
             <div className="flex items-center space-x-2">
               <Checkbox
-                checked={allow}
-                onCheckedChange={(e) => setAllow(e as boolean)}
-                id="terms"
+                checked={room?.allowOthers}
+                onCheckedChange={(e:boolean) => setRoom({ ...room, allowOthers: e })}
+                id="allow"
                 className="border-[1px] border-white rounded-sm"
               />
               <label
-                htmlFor="terms"
+                htmlFor="allow"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none"
               >
                 Allow Others to Join Your Room
+              </label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                checked={room?.allowOutBoundMessages}
+                onCheckedChange={(e) => setRoom({ ...room, allowOutBoundMessages: e as boolean })}
+                id="allowOutBoundMessages"
+                className="border-[1px] border-white rounded-sm"
+              />
+              <label
+                htmlFor="allowOutBoundMessages"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none"
+              >
+                Allow Out Bound Messages
               </label>
             </div>
 
