@@ -9,6 +9,17 @@ import { useCookies } from "react-cookie";
 import { IoClose } from "react-icons/io5";
 import { useRouter } from "next/navigation";
 
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+
 export default function Home() {
   const { toast } = useToast();
   const [login, setLogin] = useState(true);
@@ -45,8 +56,8 @@ export default function Home() {
 
   // JWT signin
   useEffect(() => {
-    setLoading(true);
     const signin = async () => {
+      setLoading(true);
       try {
         const response = await axios.get(
           process.env.BACKEND_URL
@@ -75,7 +86,6 @@ export default function Home() {
       signin().finally(() => {
         setLoading(false);
       });
-    setLoading(false);
   }, [setLoading, setIsUser, setUser, toast, isUser]);
 
   // Register
@@ -219,6 +229,7 @@ export default function Home() {
   };
 
   const addEmail = async () => {
+    setUserEmail("");
     try {
       if (inviteUser.find((v) => v.email == userEmail)) {
         toast({
@@ -288,6 +299,16 @@ export default function Home() {
     });
   };
 
+  const joinRoom = async () => {
+    setLoading(true)
+    socket.emit("join_room", {
+      roomId: userEmail,
+      user: { socketId: socket.id, user: user },
+    });
+    setLoading(false)
+    router.replace(`/${userEmail}`);
+  }
+
   useEffect(() => {
     socket.connect();
     socket.on("socketId", (data) => {
@@ -308,7 +329,7 @@ export default function Home() {
   return isUser ? (
     <>
       {loading ? (
-        <div className="loader bg-black/70 backdrop-blur-md w-screen h-screen top-0 left-0 flex items-center justify-center">
+        <div className="loader bg-black/70 backdrop-blur-md w-screen h-screen top-0 left-0 flex items-center justify-center z-[2000]">
           Loading...
         </div>
       ) : (
@@ -328,95 +349,140 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center">
-          <div className="createRoom flex flex-col gap-4 p-4 items-center justify-center">
-            <div className="heading text-xl font-semibold mb-4">
-              Create Room
-            </div>
+        <div className="flex-1 flex items-center justify-center gap-4">
+          {/* Create Room */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant={"secondary"}>Create Room</Button>
+            </DialogTrigger>
+            <DialogContent className="bg-black">
+              <div className="createRoom flex flex-col gap-4 items-center justify-center">
+                <div className="heading text-2xl font-semibold mb-1">
+                  Create Room
+                </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                checked={room?.allowOthers}
-                onCheckedChange={(e:boolean) => setRoom({ ...room, allowOthers: e })}
-                id="allow"
-                className="border-[1px] border-white rounded-sm"
-              />
-              <label
-                htmlFor="allow"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none"
-              >
-                Allow Others to Join Your Room
-              </label>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                checked={room?.allowOutBoundMessages}
-                onCheckedChange={(e) => setRoom({ ...room, allowOutBoundMessages: e as boolean })}
-                id="allowOutBoundMessages"
-                className="border-[1px] border-white rounded-sm"
-              />
-              <label
-                htmlFor="allowOutBoundMessages"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none"
-              >
-                Allow Out Bound Messages
-              </label>
-            </div>
-
-            <div className="flex w-[400px] max-w-[90vw] flex-wrap items-center justify-center gap-3">
-              {inviteUser.map((e, i) => {
-                return (
-                  <span
-                    key={i}
-                    style={{
-                      background: e.color,
-                    }}
-                    className={`pl-1 pr-2 py-1 text-xs bg-opacity-20 rounded-full flex items-center justify-center font-bold`}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={room?.allowOthers}
+                    onCheckedChange={(e: boolean) =>
+                      setRoom({ ...room, allowOthers: e })
+                    }
+                    id="allow"
+                    className="border-[1px] border-white rounded-sm"
+                  />
+                  <label
+                    htmlFor="allow"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none"
                   >
-                    <span className="badge bg-white/60 rounded-full text-[10px] h-full aspect-square mr-1 flex items-center justify-center px-2">
-                      {e.name[0].toUpperCase()}
-                    </span>
-                    {e.name}
-                    <IoClose
-                      className="text-lg ml-2 cursor-pointer text-orange-500"
-                      onClick={(a) => {
-                        setInviteUser(
-                          inviteUser.filter((c) => c.email != e.email)
-                        );
-                      }}
-                    />
-                  </span>
-                );
-              })}
-            </div>
-            <label
-              htmlFor="invite"
-              className="room-id-input rounded-md text-white bg-white/20 w-[350px] max-w-[90vw] flex overflow-hidden"
-            >
-              <input
-                id="invite"
-                placeholder="Enter email of peoples to invite."
-                className="pl-3 outline-none border-none bg-transparent flex-1 text-sm py-2 leading-none"
-                type="text"
-                value={userEmail}
-                onChange={(e) => setUserEmail(e.target.value)}
-              />
-              <button
-                onClick={(e) => addEmail()}
-                className="add h-full px-2 py-2 flex items-center justify-center bg-white/30"
-              >
-                add
-              </button>
-            </label>
+                    Allow Others to Join Your Room
+                  </label>
+                </div>
 
-            <button
-              className="room-id-input px-4 py-2 rounded-md text-white bg-green-500/40 w-[350px] max-w-[90vw] active:scale-[0.975]  duration-100 transition-all"
-              onClick={createRoom}
-            >
-              Create
-            </button>
-          </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={room?.allowOutBoundMessages}
+                    onCheckedChange={(e) =>
+                      setRoom({ ...room, allowOutBoundMessages: e as boolean })
+                    }
+                    id="allowOutBoundMessages"
+                    className="border-[1px] border-white rounded-sm"
+                  />
+                  <label
+                    htmlFor="allowOutBoundMessages"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none"
+                  >
+                    Allow Out Bound Messages
+                  </label>
+                </div>
+
+                <div className="flex w-[400px] max-w-[90vw] flex-wrap items-center justify-center gap-3">
+                  {inviteUser.map((e, i) => {
+                    return (
+                      <span
+                        key={i}
+                        style={{
+                          background: e.color,
+                        }}
+                        className={`pl-1 pr-2 py-1 text-xs bg-opacity-20 rounded-full flex items-center justify-center font-bold`}
+                      >
+                        <span className="badge bg-white/60 rounded-full text-[10px] h-full aspect-square mr-1 flex items-center justify-center px-2">
+                          {e.name[0].toUpperCase()}
+                        </span>
+                        {e.name}
+                        <IoClose
+                          className="text-lg ml-2 cursor-pointer text-orange-500"
+                          onClick={(a) => {
+                            setInviteUser(
+                              inviteUser.filter((c) => c.email != e.email)
+                            );
+                          }}
+                        />
+                      </span>
+                    );
+                  })}
+                </div>
+
+                <label
+                  htmlFor="invite"
+                  className="room-id-input rounded-md text-white bg-white/20 w-[350px] max-w-[90vw] flex overflow-hidden"
+                >
+                  <input
+                    id="invite"
+                    placeholder="Enter email of peoples to invite."
+                    className="pl-3 outline-none border-none bg-transparent flex-1 text-sm py-2 leading-none"
+                    type="email"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                  />
+                  <button
+                    onClick={(e) => addEmail()}
+                    className="add h-full px-2 py-2 flex items-center justify-center bg-white/30"
+                  >
+                    add
+                  </button>
+                </label>
+
+                <button
+                  className="room-id-input px-4 py-2 rounded-md text-white bg-green-500/40 w-[350px] max-w-[90vw] active:scale-[0.975]  duration-100 transition-all"
+                  onClick={createRoom}
+                >
+                  Create
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Join Room */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant={"secondary"}>Join Room</Button>
+            </DialogTrigger>
+            <DialogContent className="bg-black">
+              <div className="createRoom flex flex-col gap-4 items-center justify-center">
+                <div className="heading text-xl font-semibold">Join room</div>
+                <label
+                  htmlFor="invite"
+                  className="room-id-input rounded-md text-white bg-white/20 w-[350px] max-w-[90vw] flex overflow-hidden"
+                >
+                  <input
+                    id="invite"
+                    placeholder="Enter the room-code to join"
+                    className="pl-3 outline-none border-none bg-transparent flex-1 text-sm py-3 leading-none"
+                    type="text"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                  />
+                </label>
+
+                <button
+                  className="room-id-input px-4 py-2 rounded-md text-white bg-green-500/40 w-[350px] max-w-[90vw] active:scale-[0.975]  duration-100 transition-all"
+                  onClick={joinRoom}
+                >
+                  Join
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </main>
     </>

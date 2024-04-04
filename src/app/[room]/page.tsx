@@ -39,6 +39,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import axios from "axios";
 import { toast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CopyIcon } from "@radix-ui/react-icons";
 
 function SafeHydrate({ children }: { children: React.ReactNode }) {
   return (
@@ -147,6 +148,7 @@ const Page = ({ params }: { params: { room: string } }) => {
   };
 
   const addEmail = async () => {
+    setUserEmail("");
     try {
       if (inviteUser.find((v) => v.email == userEmail)) {
         toast({
@@ -240,10 +242,12 @@ const Page = ({ params }: { params: { room: string } }) => {
     socket.on("removed", (data) => {
       console.log(socket.id + " ============= " + data);
       if (socket.id === data) {
+        socket.emit("leave_room", { roomId: room?.roomId, user: user });
         socket.disconnect();
         setJoined(false);
         setRoom(null);
-        router.replace("/");
+        setLoading(false);
+        router.back();
       }
     });
     socket.on("room_updated", (data) => {
@@ -273,6 +277,7 @@ const Page = ({ params }: { params: { room: string } }) => {
   useEffect(() => {
     socket.connect();
     const signin = async () => {
+      setLoading(true);
       try {
         if (!isUser) {
           const response = await axios.get(
@@ -349,7 +354,7 @@ const Page = ({ params }: { params: { room: string } }) => {
   return (
     <SafeHydrate>
       {loading && (
-        <div className="loader bg-black/70 backdrop-blur-md w-screen h-screen top-0 left-0 flex items-center justify-center fixed">
+        <div className="loader bg-black/70 backdrop-blur-md w-screen h-screen top-0 left-0 flex items-center justify-center fixed z-[2000]">
           Loading...
         </div>
       )}
@@ -358,10 +363,21 @@ const Page = ({ params }: { params: { room: string } }) => {
           <span className="hidden md:flex">Dev-Box</span>
           <div className="room font-normal text-base flex gap-2 items-center">
             {params.room}
+            <CopyIcon
+              onClick={(e) => {
+                navigator.clipboard.writeText(room?.roomId!);
+                toast({
+                  title: "Room Id Copied 🌟",
+                  description: "code better",
+                });
+              }}
+            />
           </div>
           <div className="buttons flex gap-1">
+            {/* leave */}
             <Button
               onClick={() => {
+                socket.emit("leave_room", { roomId: room?.roomId, user: user });
                 socket.disconnect();
                 setJoined(false);
                 setRoom(null);
@@ -372,6 +388,7 @@ const Page = ({ params }: { params: { room: string } }) => {
             >
               Leave
             </Button>
+
             {/* Chat */}
             <Dialog>
               <Tooltip>
@@ -417,6 +434,7 @@ const Page = ({ params }: { params: { room: string } }) => {
                   <button
                     className="aspect-square h-full rounded-full bg-white/20 flex items-center justify-center"
                     onClick={(e) => {
+                      setChatInput("");
                       setRoom({
                         ...room,
                         chats: [
@@ -577,7 +595,7 @@ const Page = ({ params }: { params: { room: string } }) => {
                   <DialogTitle>Users</DialogTitle>
                   <DialogClose className="border-none" />
                 </DialogHeader>
-                <ScrollArea className="flex flex-col w-full h-full gap-4">
+                <ScrollArea className="flex flex-col w-full h-full gap-4 max-h-[60vh]">
                   {room?.users?.map((e) => {
                     return (
                       <div
