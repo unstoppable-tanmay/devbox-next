@@ -300,14 +300,19 @@ export default function Home() {
   };
 
   const joinRoom = async () => {
-    setLoading(true)
+    setLoading(true);
     socket.emit("join_room", {
       roomId: userEmail,
       user: { socketId: socket.id, user: user },
     });
-    setLoading(false)
-    router.replace(`/${userEmail}`);
-  }
+    setLoading(false);
+    socket.on("joined_room", (data) => {
+      console.log("joined");
+      setRoom(data);
+      setJoined(true);
+      router.replace(`/${userEmail}`);
+    });
+  };
 
   useEffect(() => {
     socket.connect();
@@ -323,6 +328,12 @@ export default function Home() {
     });
     socket.on("message", (data) => {
       console.log(data);
+      toast({
+        variant: "default",
+        duration: 2000,
+        title: data,
+        description: "code better",
+      });
     });
   }, []);
 
@@ -432,6 +443,9 @@ export default function Home() {
                     className="pl-3 outline-none border-none bg-transparent flex-1 text-sm py-2 leading-none"
                     type="email"
                     value={userEmail}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") addEmail();
+                    }}
                     onChange={(e) => setUserEmail(e.target.value)}
                   />
                   <button
@@ -470,6 +484,9 @@ export default function Home() {
                     className="pl-3 outline-none border-none bg-transparent flex-1 text-sm py-3 leading-none"
                     type="text"
                     value={userEmail}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") joinRoom();
+                    }}
                     onChange={(e) => setUserEmail(e.target.value)}
                   />
                 </label>

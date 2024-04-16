@@ -223,6 +223,10 @@ const Page = ({ params }: { params: { room: string } }) => {
   }, [innerWidth]);
 
   useEffect(() => {
+    // socket.emit("join_room", {
+    //   roomId: params.room,
+    //   user: { socketId: socket.id, user: user },
+    // });
     socket.on("joined_room", (data) => {
       console.log("joined");
       setRoom(data);
@@ -433,6 +437,22 @@ const Page = ({ params }: { params: { room: string } }) => {
                   />
                   <button
                     className="aspect-square h-full rounded-full bg-white/20 flex items-center justify-center"
+                    onKeyDown={(e) => {
+                      if (e.key == "Enter") {
+                        setChatInput("");
+                        setRoom({
+                          ...room,
+                          chats: [
+                            ...room?.chats!,
+                            {
+                              chat: chatInput,
+                              time: Date.now().toString(),
+                              user: user.name,
+                            },
+                          ],
+                        });
+                      }
+                    }}
                     onClick={(e) => {
                       setChatInput("");
                       setRoom({
