@@ -506,7 +506,7 @@ export default function Home() {
   ) : (
     <main className="flex w-screen min-h-screen items-center flex-col overflow-x-hidden">
       <div className="w-screen flex items-center justify-center font-bold text-lg py-4">
-        Dev-Box
+        Educursor
       </div>
       <div className="content min-h-[90vh] flex w-full h-full items-center justify-around flex-1 flex-wrap">
         <div className="Heading flex flex-col gap-2 items-center md:items-start text-[clamp(40px,6vw,120px)] font-black leading-tight tracking-wider select-none">
