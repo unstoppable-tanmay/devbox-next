@@ -348,7 +348,7 @@ export default function Home() {
       )}
       <main className="w-screen min-h-screen flex items-center flex-col relative">
         <div className="w-screen flex items-center justify-between px-10 font-bold text-lg py-4 flex-wrap">
-          Dev-Box
+          Educursor
           <div className="flex gap-4">
             <div className="heading font-bold text-lg">{user.name}</div>{" "}
             <div

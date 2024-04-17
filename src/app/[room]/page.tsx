@@ -364,7 +364,7 @@ const Page = ({ params }: { params: { room: string } }) => {
       )}
       <main className="flex min-h-screen items-center flex-col overflow-x-hidden relative">
         <div className="w-screen flex items-center justify-between px-4 font-bold text-lg py-4">
-          <span className="hidden md:flex">Dev-Box</span>
+          <span className="hidden md:flex">Educursor</span>
           <div className="room font-normal text-base flex gap-2 items-center">
             {params.room}
             <CopyIcon
